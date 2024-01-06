@@ -48,27 +48,6 @@ export class MetricsManager extends Component {
     }
   }
 
-  async deploy(): Promise<boolean> {
-    try {
-      const queryRunner: QueryRunner = await this.dataSource.createQueryRunner();
-      let success: boolean = true;
-
-      for(const script of schema) {
-        try {
-          await queryRunner.manager.query(script);
-        } catch(e: any) {
-          this.error(`The following query encountered an error: ${script}`, e);
-          success = false;
-        }
-      }
-
-      return success;
-    } catch(e: any) {
-      this.error(`Error trying to deploy schema`, e);
-      return false;
-    }
-  }
-
   countMetricSync(key: string): void {
     if(this.counters.hasOwnProperty(key)) {
       this.counters[key].addRecord();

@@ -1,8 +1,10 @@
-import {DataSource, MoreThan, Not, Repository} from "typeorm";
+import {DataSource, MoreThan, Not, QueryRunner, Repository} from "typeorm";
 import {MetricsCounter} from "../entitiy/MetricsCounter";
 import {ILogger} from "../interfaces";
 import Component from "./Component";
 import {TWENTY_FOUR_HOUR_MS} from "../utils/constants";
+import {schema} from "../schema/schema";
+import Logger from "./Logger";
 
 export class MetricsCounterStore extends Component {
   repository!: Repository<MetricsCounter>;
@@ -10,11 +12,32 @@ export class MetricsCounterStore extends Component {
 
   constructor(
     dataSource: DataSource,
-    logger: ILogger
+    logger?: ILogger
   ) {
-    super(logger);
+    super(logger || new Logger());
     this.dataSource = dataSource
     this.repository = dataSource.getRepository(MetricsCounter);
+  }
+
+  async deploy(): Promise<boolean> {
+    try {
+      const queryRunner: QueryRunner = await this.dataSource.createQueryRunner();
+      let success: boolean = true;
+
+      for(const script of schema) {
+        try {
+          await queryRunner.manager.query(script);
+        } catch(e: any) {
+          this.error(`The following query encountered an error: ${script}`, e);
+          success = false;
+        }
+      }
+
+      return success;
+    } catch(e: any) {
+      this.error(`Error trying to deploy schema`, e);
+      return false;
+    }
   }
 
   async getLatest24HrRecord(metricName: string): Promise<MetricsCounter | undefined> {
@@ -92,10 +115,14 @@ export class MetricsCounterStore extends Component {
 
   async countAll(
     metricName: string,
-    isFor24Hr: boolean,
+    isFor24Hr?: boolean,
   ): Promise<number | undefined> {
     try {
-      return isFor24Hr ? (await this.repository.count({
+      return (typeof(isFor24Hr) === 'undefined') ? (await this.repository.count({
+        where: {
+          metricName,
+        }
+      })) : (isFor24Hr ? (await this.repository.count({
         where: {
           metricName,
           interval: TWENTY_FOUR_HOUR_MS,
@@ -105,7 +132,7 @@ export class MetricsCounterStore extends Component {
           metricName,
           interval: Not(TWENTY_FOUR_HOUR_MS),
         }
-      }));
+      })));
     } catch(e: any) {
       this.error(`Error trying to count all results`, e);
       return undefined;
