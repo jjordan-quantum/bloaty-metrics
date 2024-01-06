@@ -2,29 +2,35 @@ import NodeCache from "node-cache";
 import {getRandom} from "../utils/getRandom";
 import {ILogger} from "../interfaces";
 import Component from "../lib/Component";
+import Logger from "../lib/Logger";
 
 class MetricsCounterCache extends Component {
   cache!: NodeCache;
   metricName?: string;
   serviceName?: string;
 
-  constructor(metricName: string, logger: ILogger) {
-    super(logger);
+  constructor(metricName: string, logger?: ILogger) {
+    super(logger || new Logger());
     this.cache = new NodeCache();
     this.metricName = metricName;
     this.serviceName = `${metricName}MetricsCounter`;
   }
 
-  public addRecord(timestamp?: number): boolean {
+  addRecord(timestamp?: number, id?: number): boolean {
     try {
       return this.cache.set(
-        this.getKey(timestamp || Date.now(), getRandom()),
+        this.getKey(timestamp || Date.now(), id || getRandom()),
         1,
       );
     } catch(e: any) {
       this.error(`Error adding metrics count record`, e);
       return false;
     }
+  }
+
+  // for testing
+  has(timestamp: number, id: number): boolean {
+    return this.cache.has(this.getKey(timestamp, id));
   }
 
   getAllKeysForInterval(interval: number, timestamp: number): string[] | undefined {
@@ -77,6 +83,7 @@ class MetricsCounterCache extends Component {
 
         if(keyTimestamp < timestamp) {
           deleteKeys.push(key);
+          //this.log(`Deleting key: ${key}`);
         }
       }
 
