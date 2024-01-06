@@ -1,2 +1,9 @@
 export const TWENTY_FOUR_HOUR_MS: number = 24 * 60 * 60 * 1000;
+export const ONE_MINUTE_MS: number = 60 * 1000;
+export const TWO_MINUTE_MS: number = 2 * 60 * 1000;
+export const FIVE_MINUTE_MS: number = 5 * 60 * 1000;
 export const TEN_MINUTE_MS: number = 10 * 60 * 1000;
+export const FIFTEEN_MINUTE_MS: number = 15 * 60 * 1000;
+export const TWENTY_MINUTE_MS: number = 20 * 60 * 1000;
+export const THIRTY_MINUTE_MS: number = 30 * 60 * 1000;
+export const ONE_HOUR_MS: number = 60 * 60 * 1000;

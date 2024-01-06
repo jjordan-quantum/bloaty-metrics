@@ -1,12 +1,13 @@
-import {DataSource, QueryRunner} from "typeorm";
+import {DataSource} from "typeorm";
 import {ILogger} from "../interfaces";
 import Logger from "./Logger";
 import Component from "./Component";
 import {MetricsCounterStore} from "./MetricsCounterStore";
 import MetricsCounterCache from "../cache/MetricsCounterCache";
 import {TWENTY_FOUR_HOUR_MS} from "../utils/constants";
-import {MetricsScheduler} from "./MetricsScheduler";
-import {schema} from "../schema/schema";
+import {CacheInterval} from "../types/types";
+import {getCronSchedule} from "../utils/getCronSchedule";
+const cron = require('node-cron');
 
 export type CountResult = {
   count: number;
@@ -14,32 +15,37 @@ export type CountResult = {
   metricName: string;
 }
 
+export type CacheMetricsResult = {
+  success: boolean;
+  message?: string;
+  error?: Error;
+
+  metricName: string;
+
+  metricsCountForInterval?: number;
+  wasIntervalRecordCreated?: boolean;
+  was24HrRecordCreated?: boolean;
+  metricsCountFor24Hr?: number;
+}
+
 export class MetricsManager extends Component {
   dataSource!: DataSource;
   metricsCounterStore!: MetricsCounterStore;
-  metricsScheduler!: MetricsScheduler;
   interval!: number;
   counters: {[key: string]: MetricsCounterCache} = {};
 
   constructor(
     dataSource: DataSource,
     keys: string[],
-    interval: number,
-    schedule: string,
+    cacheInterval: CacheInterval,
     logger?: ILogger,
-    deploySchema?: boolean,
   ) {
     super(logger || (new Logger()));
     this.dataSource = dataSource;
-    this.interval = interval
+    this.interval = cacheInterval
 
     this.metricsCounterStore = new MetricsCounterStore(
       dataSource,
-      this.logger,
-    );
-
-    this.metricsScheduler = new MetricsScheduler(
-      schedule,
       this.logger,
     );
 
@@ -48,22 +54,102 @@ export class MetricsManager extends Component {
     }
   }
 
-  countMetricSync(key: string): void {
-    if(this.counters.hasOwnProperty(key)) {
-      this.counters[key].addRecord();
+  start(logMetricsCallBack?: Function): any {
+    return cron.schedule(getCronSchedule(this.interval), async () => {
+      const now = Date.now();
+
+      try {
+        await Promise.allSettled(Object.keys(this.counters).map(key => this.cacheMetricsForInterval(
+          key,
+          now, // ?
+          true,
+          true,
+          true,
+        )));
+
+        if(logMetricsCallBack) {
+          logMetricsCallBack();
+        }
+      } catch(e: any) {
+        this.error(`Error while executing scheduled metrics caching @ ${now}ms`, e);
+      }
+    });
+  }
+
+  countMetricSync(metricName: string): void {
+    if(this.counters.hasOwnProperty(metricName)) {
+      this.counters[metricName].addRecord();
     } else {
-      this.error(`Counter not found for key ${key}`);
+      this.error(`Counter not found for key ${metricName}`);
     }
   }
 
-  async countMetric(key: string): Promise<void> {
-    this.countMetricSync(key);
+  async countMetric(metricName: string): Promise<void> {
+    this.countMetricSync(metricName);
+  }
+
+  async cacheMetricsForInterval(
+    metricName: string,
+    timestamp: number,
+    saveIntervalCountToDataStore: boolean,
+    cleanCache: boolean,
+    save24HrCountToDataStore: boolean,
+  ): Promise<CacheMetricsResult> {
+    try {
+      const countResult: CountResult | undefined = await this.getCountForInterval(
+        metricName,
+        Date.now(),
+        saveIntervalCountToDataStore,
+        cleanCache,
+      );
+
+      if(!countResult) {
+        this.error('Failed to count metrics in cache');
+
+        return {
+          success: false,
+          message: 'Failed to count metrics in cache',
+          metricName,
+        }
+      }
+
+      const countResult24Hr: CountResult | undefined = await this.getCountForLast24Hr(
+        metricName,
+        Date.now(),
+        true,
+      );
+
+      if(!countResult24Hr) {
+        this.error('Failed to count 24 hr metrics in datastore');
+      }
+
+      return {
+        success: !!countResult24Hr,
+        message: !!countResult24Hr ? undefined : 'failed to count 24 hr metrics in datastore',
+        metricName,
+
+        metricsCountForInterval: countResult.count,
+        wasIntervalRecordCreated: saveIntervalCountToDataStore,
+        was24HrRecordCreated: save24HrCountToDataStore && !!countResult24Hr,
+        metricsCountFor24Hr: !!countResult24Hr ? countResult24Hr.count : undefined,
+      }
+    } catch(e: any) {
+      this.error(`Error encountered updating metrics`, e);
+
+      return {
+        success: false,
+        message: 'encountered error',
+        error: e,
+        metricName,
+      }
+    }
   }
 
   async getCountForInterval(
     metricName: string,
     timestamp: number,
     saveCountToDataStore: boolean,
+    cleanCache: boolean,
   ): Promise<CountResult | undefined> {
     try {
       if(!this.counters.hasOwnProperty(metricName)) {
@@ -90,6 +176,10 @@ export class MetricsManager extends Component {
           countForInterval,
           timestamp,
         );
+      }
+
+      if(cleanCache) {
+        this.counters[metricName].deleteAllMetricsOlderThanTimestamp(timestamp);
       }
 
       return {

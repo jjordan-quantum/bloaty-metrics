@@ -91,7 +91,7 @@ describe('MetricsCounterStore', async () => {
       );
 
       expect(!!count).to.be.true;
-      expect(count).to.eql(15903)
+      expect(count).to.eql(15903);
     });
   });
 

@@ -17,7 +17,7 @@ describe('MetricsCounterCache', async () => {
         expect(result).to.eql(true);
         expect(metricsCounterCache.has(timestamp, id)).to.eql(true);
       });
-    })
+    });
   });
 
   describe('getAllKeysForInterval', async () => {
@@ -27,6 +27,8 @@ describe('MetricsCounterCache', async () => {
 
       if(!!keys) {
         expect(keys.length).to.eql(5);
+      } else {
+        expect(false).to.be.true;
       }
     });
   });
@@ -35,10 +37,7 @@ describe('MetricsCounterCache', async () => {
     it(`should count 5 metrics for the interval`, async () => {
       const count: number | undefined = metricsCounterCache.countMetricsForInterval(10 * 60 * 1000, Date.now());
       expect(!!count).to.eql(true);
-
-      if(!!count) {
-        expect(count).to.eql(5);
-      }
+      expect(count).to.eql(5);
     });
   });
 
@@ -48,12 +47,8 @@ describe('MetricsCounterCache', async () => {
         .deleteAllMetricsOlderThanTimestamp(Date.now() - 10 * 60 * 1000);
 
       expect(!!count).to.eql(true);
-
-      if(!!count) {
-        expect(count).to.eql(7);
-      }
-
-     expect(metricsCounterCache.cache.keys().length).to.eql(5);
+      expect(count).to.eql(7);
+      expect(metricsCounterCache.cache.keys().length).to.eql(5);
     });
 
     it(`should delete all keys`, async () => {
@@ -61,11 +56,7 @@ describe('MetricsCounterCache', async () => {
         .deleteAllMetricsOlderThanTimestamp(Date.now());
 
       expect(!!count).to.eql(true);
-
-      if(!!count) {
-        expect(count).to.eql(5);
-      }
-
+      expect(count).to.eql(5);
       expect(metricsCounterCache.cache.keys().length).to.eql(0);
     });
   });

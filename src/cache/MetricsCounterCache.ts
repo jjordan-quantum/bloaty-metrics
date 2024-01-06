@@ -97,6 +97,10 @@ class MetricsCounterCache extends Component {
   getKey(timestamp: number, id: number): string {
     return `${timestamp}:${id}`;
   }
+
+  flushAll(): void {
+    this.cache.flushAll();
+  }
 }
 
 export default MetricsCounterCache;
