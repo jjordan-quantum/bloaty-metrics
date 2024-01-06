@@ -1,10 +1,12 @@
-import {DataSource} from "typeorm";
+import {DataSource, QueryRunner} from "typeorm";
 import {ILogger} from "../interfaces";
 import Logger from "./Logger";
 import Component from "./Component";
 import {MetricsCounterStore} from "./MetricsCounterStore";
 import MetricsCounterCache from "../cache/MetricsCounterCache";
 import {TWENTY_FOUR_HOUR_MS} from "../utils/constants";
+import {MetricsScheduler} from "./MetricsScheduler";
+import {schema} from "../schema/schema";
 
 export type CountResult = {
   count: number;
@@ -15,6 +17,7 @@ export type CountResult = {
 export class MetricsManager extends Component {
   dataSource!: DataSource;
   metricsCounterStore!: MetricsCounterStore;
+  metricsScheduler!: MetricsScheduler;
   interval!: number;
   counters: {[key: string]: MetricsCounterCache} = {};
 
@@ -22,7 +25,9 @@ export class MetricsManager extends Component {
     dataSource: DataSource,
     keys: string[],
     interval: number,
-    logger?: ILogger
+    schedule: string,
+    logger?: ILogger,
+    deploySchema?: boolean,
   ) {
     super(logger || (new Logger()));
     this.dataSource = dataSource;
@@ -33,8 +38,34 @@ export class MetricsManager extends Component {
       this.logger,
     );
 
+    this.metricsScheduler = new MetricsScheduler(
+      schedule,
+      this.logger,
+    );
+
     for(const key of keys) {
       this.counters[key] = new MetricsCounterCache(key, this.logger);
+    }
+  }
+
+  async deploy(): Promise<boolean> {
+    try {
+      const queryRunner: QueryRunner = await this.dataSource.createQueryRunner();
+      let success: boolean = true;
+
+      for(const script of schema) {
+        try {
+          await queryRunner.manager.query(script);
+        } catch(e: any) {
+          this.error(`The following query encountered an error: ${script}`, e);
+          success = false;
+        }
+      }
+
+      return success;
+    } catch(e: any) {
+      this.error(`Error trying to deploy schema`, e);
+      return false;
     }
   }
 
@@ -96,7 +127,6 @@ export class MetricsManager extends Component {
     metricName: string,
     timestamp: number,
     saveCountToDataStore: boolean,
-
   ): Promise<CountResult | undefined> {
     try {
       const count: number | undefined = await this.metricsCounterStore.get24HrCountFromIntervals(

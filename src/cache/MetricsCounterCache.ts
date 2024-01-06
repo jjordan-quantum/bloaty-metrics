@@ -18,7 +18,7 @@ class MetricsCounterCache extends Component {
   public addRecord(timestamp?: number): boolean {
     try {
       return this.cache.set(
-        this.getKey(Date.now(), getRandom()),
+        this.getKey(timestamp || Date.now(), getRandom()),
         1,
       );
     } catch(e: any) {

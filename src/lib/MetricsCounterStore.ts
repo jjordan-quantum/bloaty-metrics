@@ -95,7 +95,7 @@ export class MetricsCounterStore extends Component {
     isFor24Hr: boolean,
   ): Promise<number | undefined> {
     try {
-      return isFor24Hr ?(await this.repository.count({
+      return isFor24Hr ? (await this.repository.count({
         where: {
           metricName,
           interval: TWENTY_FOUR_HOUR_MS,
