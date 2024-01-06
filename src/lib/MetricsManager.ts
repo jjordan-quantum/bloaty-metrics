@@ -5,8 +5,9 @@ import Component from "./Component";
 import {MetricsCounterStore} from "./MetricsCounterStore";
 import MetricsCounterCache from "../cache/MetricsCounterCache";
 import {TWENTY_FOUR_HOUR_MS} from "../utils/constants";
-import {CacheInterval} from "../types/types";
+import {CacheInterval} from "../types";
 import {getCronSchedule} from "../utils/getCronSchedule";
+// tslint:disable-next-line:no-var-requires
 const cron = require('node-cron');
 
 export type CountResult = {
@@ -54,7 +55,7 @@ export class MetricsManager extends Component {
     }
   }
 
-  start(logMetricsCallBack?: Function): any {
+  start(logMetricsCallBack?: () => {}): any {
     return cron.schedule(getCronSchedule(this.interval), async () => {
       const now = Date.now();
 

@@ -99,6 +99,7 @@ export class MetricsCounterStore extends Component {
           count,
         } = counter;
 
+        // tslint:disable-next-line:radix
         if(parseInt(intervalEndTimestampMs) > timestamp) {
           continue;
         }

@@ -45,6 +45,7 @@ class MetricsCounterCache extends Component {
           _id,
         ] = key.split(':');
 
+        // tslint:disable-next-line:radix
         const keyTimestamp: number = parseInt(_timestamp);
 
         if((keyTimestamp > intervalStart) && (keyTimestamp <= timestamp)) {
@@ -79,11 +80,12 @@ class MetricsCounterCache extends Component {
           _id,
         ] = key.split(':');
 
+        // tslint:disable-next-line:radix
         const keyTimestamp: number = parseInt(_timestamp);
 
         if(keyTimestamp < timestamp) {
           deleteKeys.push(key);
-          //this.log(`Deleting key: ${key}`);
+          // this.log(`Deleting key: ${key}`);
         }
       }
 
