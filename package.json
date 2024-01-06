@@ -1,0 +1,53 @@
+{
+  "name": "bloaty-metrics",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "lint": "tslint -p tsconfig.json --fix",
+    "test": "mocha --require ts-node/register test/unit/**/*.test.ts test/integration/**/*.test.ts",
+    "build": "tsc",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm test && npm run lint",
+    "preversion": "npm run lint",
+    "version": "npm run format && git add -A src",
+    "postversion": "git push && git push --tags"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jjordan-quantum/bloaty-metrics.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jjordan-quantum/bloaty-metrics/issues"
+  },
+  "homepage": "https://github.com/jjordan-quantum/bloaty-metrics#readme",
+  "dependencies": {
+    "@types/pg": "^8.10.9",
+    "dotenv": "^16.0.1",
+    "node-cache": "^5.1.2",
+    "pg": "^8.11.3",
+    "reflect-metadata": "^0.2.1",
+    "typeorm": "^0.3.17"
+  },
+  "devDependencies": {
+    "@tsconfig/recommended": "~1.0.1",
+    "@types/chai": "~4.3.0",
+    "@types/express": "^4.17.21",
+    "@types/mocha": "~9.0.0",
+    "@types/node": "^17.0.33",
+    "chai": "~4.3.4",
+    "express": "^4.18.2",
+    "mocha": "~9.0.3",
+    "prettier": "^2.7.1",
+    "tslint": "^6.1.3",
+    "tslint-config-prettier": "^1.18.0",
+    "typedoc": "^0.22.15",
+    "ts-mocha": "~9.0.2",
+    "ts-node": "^10.7.0",
+    "tslib": "^2.4.0",
+    "typescript": "4.5.2"
+  }
+}
