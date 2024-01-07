@@ -22,6 +22,7 @@ export class MetricsCounterStore extends Component {
   async deploy(): Promise<boolean> {
     try {
       const queryRunner: QueryRunner = await this.dataSource.createQueryRunner();
+      await queryRunner.connect();
       let success: boolean = true;
 
       for(const script of schema) {
@@ -33,6 +34,7 @@ export class MetricsCounterStore extends Component {
         }
       }
 
+      await queryRunner.release();
       return success;
     } catch(e: any) {
       this.error(`Error trying to deploy schema`, e);
