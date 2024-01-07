@@ -1,8 +1,12 @@
 {
   "name": "bloaty-metrics",
-  "version": "0.1.1",
-  "description": "",
-  "main": "index.js",
+  "version": "0.1.2",
+  "description": "simple metrics counter",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*"
+  ],
   "scripts": {
     "lint": "tslint -p tsconfig.json --fix",
     "test": "mocha --exit --require ts-node/register test/unit/**/*.test.ts test/integration/**/*.test.ts",
